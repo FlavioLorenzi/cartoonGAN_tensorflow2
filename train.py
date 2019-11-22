@@ -13,7 +13,6 @@ from logger import get_logger
 from generator import Generator
 from discriminator import Discriminator
 
-
 @tf.function
 def gram(x):
     shape_x = tf.shape(x)
@@ -24,6 +23,9 @@ def gram(x):
 
 
 class Trainer:
+
+	#hyperparams
+
     def __init__(
         self,
         dataset_name,
@@ -64,6 +66,8 @@ class Trainer:
         debug,
         **kwargs,
     ):
+    
+
         self.debug = debug
         self.ascii = os.name == "nt"
         self.dataset_name = dataset_name
@@ -174,6 +178,12 @@ class Trainer:
         self.discriminator_checkpoint_prefix = os.path.join(
             self.discriminator_checkpoint_dir, self.discriminator_checkpoint_prefix)
 
+        # # #
+
+
+
+    #needed methods
+
     def _save_generated_images(self, batch_x, image_name, nrow=2, ncol=4):
         # NOTE: 0 <= batch_x <= 1, float32, numpy.ndarray
         if not isinstance(batch_x, np.ndarray):
@@ -188,11 +198,13 @@ class Trainer:
         gc.collect()
         return out_arr
 
+    #if the dataset is overbound
     @tf.function
     def random_resize(self, x):
         size = choice(self.sizes)
         return tf.image.resize(x, (size, size))
 
+    #IMAGE PROCESSING
     @tf.function
     def image_processing(self, filename, is_train=True):
         crop_size = self.input_size
@@ -211,14 +223,31 @@ class Trainer:
         img = tf.cast(x, tf.float32) / 127.5 - 1
         return img
 
+
+    #DATASET
+
     def get_dataset(self, dataset_name, domain, _type, batch_size):
-        files = glob(os.path.join(self.data_dir, dataset_name, f"{_type}{domain}", "*"))
+        files = glob(os.path.join(self.data_dir, dataset_name, f"{_type}{domain}", "*"))   #take dataset  
+        
+        #NON VEDE LE IMMAGINI e torna una lista vuota ERRORE! ! 
+
         num_images = len(files)
+        print(num_images)
+
+        #print
         self.logger.info(
             f"Found {num_images} domain{domain} images in {_type}{domain} folder."
         )
-        ds = tf.data.Dataset.from_tensor_slices(files)
-        ds = ds.apply(tf.data.experimental.shuffle_and_repeat(num_images))
+
+        ds = tf.data.Dataset.from_tensor_slices(files)	#Creates a Dataset whose elements are slices of the given tensors
+
+        #Shuffles and repeats a Dataset returning a new permutation for each epoch. DEPRECATED
+        ds = ds.apply(tf.data.experimental.shuffle_and_repeat(num_images)) 
+       
+        #ds = ds.shuffle(num_images, reshuffle_each_iteration=True).repeat(None)  #new function tf
+        
+        #buffer size:   number of elements from this dataset from which the new dataset will sample
+
 
         def fn(fname):
             if self.multi_scale:
@@ -226,10 +255,16 @@ class Trainer:
             else:
                 return self.image_processing(fname, True)
 
-        ds = ds.apply(tf.data.experimental.map_and_batch(fn, batch_size))
-        steps = int(np.ceil(num_images/batch_size))
-        # user iter(ds) to avoid generating iterator every epoch
-        return iter(ds), steps
+        ds = ds.apply(tf.data.experimental.map_and_batch(fn, batch_size))   #mapping of the fn over the batch
+        steps = int(np.ceil(num_images/batch_size))    #np ceil return as output the approximate input (by excess or defect)
+        
+        return iter(ds), steps  	#use iter(ds) to avoid generating iterator every epoch
+
+
+
+
+
+
 
     @tf.function
     def pass_to_vgg(self, tensor):
