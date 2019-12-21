@@ -6,6 +6,14 @@ from random import choice
 
 from imageio import imwrite
 import tensorflow as tf
+
+#prevent memory leak
+############################################
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.Session(config=config)
+############################################
+
 import numpy as np
 from tqdm import tqdm
 
@@ -23,9 +31,6 @@ def gram(x):
 
 
 class Trainer:
-
-	#hyperparams
-
     def __init__(
         self,
         dataset_name,
@@ -66,8 +71,6 @@ class Trainer:
         debug,
         **kwargs,
     ):
-    
-
         self.debug = debug
         self.ascii = os.name == "nt"
         self.dataset_name = dataset_name
@@ -105,7 +108,7 @@ class Trainer:
         self.pretrain_generator_name = pretrain_generator_name
         self.generator_name = generator_name
         self.discriminator_name = discriminator_name
-
+        
         self.logger = get_logger("Trainer", debug=debug)
         # NOTE: just minimal demonstration of multi-scale training
         self.sizes = [self.input_size - 32, self.input_size, self.input_size + 32]
@@ -178,12 +181,6 @@ class Trainer:
         self.discriminator_checkpoint_prefix = os.path.join(
             self.discriminator_checkpoint_dir, self.discriminator_checkpoint_prefix)
 
-        # # #
-
-
-
-    #needed methods
-
     def _save_generated_images(self, batch_x, image_name, nrow=2, ncol=4):
         # NOTE: 0 <= batch_x <= 1, float32, numpy.ndarray
         if not isinstance(batch_x, np.ndarray):
@@ -198,13 +195,11 @@ class Trainer:
         gc.collect()
         return out_arr
 
-    #if the dataset is overbound
     @tf.function
     def random_resize(self, x):
         size = choice(self.sizes)
         return tf.image.resize(x, (size, size))
 
-    #IMAGE PROCESSING
     @tf.function
     def image_processing(self, filename, is_train=True):
         crop_size = self.input_size
@@ -223,31 +218,14 @@ class Trainer:
         img = tf.cast(x, tf.float32) / 127.5 - 1
         return img
 
-
-    #DATASET
-
     def get_dataset(self, dataset_name, domain, _type, batch_size):
-        files = glob(os.path.join(self.data_dir, dataset_name, f"{_type}{domain}", "*"))   #take dataset  
-        
-        #NON VEDE LE IMMAGINI e torna una lista vuota ERRORE! ! 
-
+        files = glob(os.path.join(self.data_dir, dataset_name, f"{_type}{domain}", "*"))
         num_images = len(files)
-        print(num_images)
-
-        #print
         self.logger.info(
             f"Found {num_images} domain{domain} images in {_type}{domain} folder."
         )
-
-        ds = tf.data.Dataset.from_tensor_slices(files)	#Creates a Dataset whose elements are slices of the given tensors
-
-        #Shuffles and repeats a Dataset returning a new permutation for each epoch. DEPRECATED
-        ds = ds.apply(tf.data.experimental.shuffle_and_repeat(num_images)) 
-       
-        #ds = ds.shuffle(num_images, reshuffle_each_iteration=True).repeat(None)  #new function tf
-        
-        #buffer size:   number of elements from this dataset from which the new dataset will sample
-
+        ds = tf.data.Dataset.from_tensor_slices(files)
+        ds = ds.apply(tf.data.experimental.shuffle_and_repeat(num_images))
 
         def fn(fname):
             if self.multi_scale:
@@ -255,16 +233,10 @@ class Trainer:
             else:
                 return self.image_processing(fname, True)
 
-        ds = ds.apply(tf.data.experimental.map_and_batch(fn, batch_size))   #mapping of the fn over the batch
-        steps = int(np.ceil(num_images/batch_size))    #np ceil return as output the approximate input (by excess or defect)
-        
-        return iter(ds), steps  	#use iter(ds) to avoid generating iterator every epoch
-
-
-
-
-
-
+        ds = ds.apply(tf.data.experimental.map_and_batch(fn, batch_size))
+        steps = int(np.ceil(num_images/batch_size))
+        # user iter(ds) to avoid generating iterator every epoch
+        return iter(ds), steps
 
     @tf.function
     def pass_to_vgg(self, tensor):
@@ -616,7 +588,23 @@ class Trainer:
                     ds_source.next(), ds_target.next(), ds_smooth.next())
                 self.train_step(source_images, target_images, smooth_images,
                                 generator, d, g_optimizer, d_optimizer)
-
+                
+                #######################################################################################
+                #if step == steps_per_epoch / 2:
+                #    self.logger.info(f"Saving checkpoints after step {step} ended... to avoid OOM! ")
+                #    g_checkpoint.save(file_prefix=self.generator_checkpoint_prefix)
+                #    d_checkpoint.save(file_prefix=self.discriminator_checkpoint_prefix)
+                #    generator.save_weights(os.path.join(self.model_dir, "generator"))
+                #######################################################################################
+                
+                #######################################################################################
+                if step == steps_per_epoch:
+                    self.logger.info(f"Saving checkpoints after step {step} ended... to avoid OOM! ")
+                    g_checkpoint.save(file_prefix=self.generator_checkpoint_prefix)
+                    d_checkpoint.save(file_prefix=self.discriminator_checkpoint_prefix)
+                    generator.save_weights(os.path.join(self.model_dir, "generator"))
+                    d.save_weights(os.path.join(self.model_dir, "discriminator")) #not sure about it!
+                #######################################################################################
                 if step % self.reporting_steps == 0:
 
                     global_step = (epoch_idx - 1) * steps_per_epoch + step
@@ -649,11 +637,6 @@ class Trainer:
                             0,
                     )
                     tf.summary.image('gan_val_generated_images', img, step=epoch)
-            self.logger.info(f"Saving checkpoints after epoch {epoch_idx} ended...")
-            g_checkpoint.save(file_prefix=self.generator_checkpoint_prefix)
-            d_checkpoint.save(file_prefix=self.discriminator_checkpoint_prefix)
-
-            generator.save_weights(os.path.join(self.model_dir, "generator"))
             gc.collect()
         del ds_source, ds_target, ds_smooth
         gc.collect()
