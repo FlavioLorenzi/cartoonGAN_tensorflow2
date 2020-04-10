@@ -12,3 +12,6 @@ The work consisted of a process of re-elaboration and re-implementation of the g
 
 ## Documentation
 You can read our final technical documentation about this project here [DOCUMENTATION](./CartoonGAN__Generative_Adversarial_Networks_for_Photo_Cartoonization.pdf)
+
+## Results
+After some problems encountered (such as enormous training time, OOM exhausted resource, network instability ...), we found good results thanks to tensorboard, shown here [RESULTS](./results.jpg)
