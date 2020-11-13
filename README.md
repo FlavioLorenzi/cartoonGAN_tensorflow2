@@ -12,6 +12,7 @@ related blog  https://leemeng.tw/generate-anime-using-cartoongan-and-tensorflow2
 
 ## Approach
 The work consisted of a process of re-elaboration and re-implementation of the gan presented by https://github.com/mnicnc404/CartoonGan-tensorflow. Finally she was trained with colab on a new set of images to then observe the results.
+![](gan.jpg)
 
 
 ## Documentation
