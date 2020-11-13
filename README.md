@@ -15,3 +15,6 @@ You can read our final technical documentation about this project here [DOCUMENT
 
 ## Results
 After some problems encountered (such as enormous training time, OOM exhausted resource, network instability ...), we found good results thanks to tensorboard, shown here [RESULTS](./results.jpg)
+
+![](cover.mov)
+
