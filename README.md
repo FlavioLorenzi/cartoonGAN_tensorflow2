@@ -2,7 +2,7 @@
 Sapienza, MARR, Elective in Artificial Intelligence project: training cartoonGAN with an own implemented dataset
 
 original paper http://openaccess.thecvf.com/content_cvpr_2018/papers/Chen_CartoonGAN_Generative_Adversarial_CVPR_2018_paper.pdf
-
+![](cover.gif)
 related blog  https://leemeng.tw/generate-anime-using-cartoongan-and-tensorflow2-en.html
 
 
@@ -16,5 +16,5 @@ You can read our final technical documentation about this project here [DOCUMENT
 ## Results
 After some problems encountered (such as enormous training time, OOM exhausted resource, network instability ...), we found good results thanks to tensorboard, shown here [RESULTS](./results.jpg)
 
-![](cover.gif)
+
 
