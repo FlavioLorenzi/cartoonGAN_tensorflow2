@@ -14,6 +14,8 @@ related blog  https://leemeng.tw/generate-anime-using-cartoongan-and-tensorflow2
 The work consisted of a process of re-elaboration and re-implementation of the gan presented by https://github.com/mnicnc404/CartoonGan-tensorflow. Finally she was trained with colab on a new set of images to then observe the results.
 ![](gan.jpg)
 
+NB: Our method takes unpaired photos and cartoon images for training: we captured key frames from the Cartoon film ”Spirited Away” of Hayao Miyazaki.
+
 
 ## Documentation
 You can read our final technical documentation about this project here [DOCUMENTATION](./CartoonGAN__Generative_Adversarial_Networks_for_Photo_Cartoonization.pdf)
